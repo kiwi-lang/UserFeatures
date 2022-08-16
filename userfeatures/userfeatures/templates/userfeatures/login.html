@@ -1,0 +1,35 @@
+{% extends "userfeatures/layout.html" %}
+
+{% block body %}
+
+
+<div class="row" style="padding-top: 50px;">
+    <div class="col"></div>
+    <div class="col">
+        <h2>Login</h2>
+
+        {% if message %}
+        <div class="alert alert-danger" role="alert">{{ message }}</div>
+        {% endif %}
+
+        <form action="{% url 'login' %}" method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="username_input" class="form-label">Username</label>
+                <input id="username_input" autofocus class="form-control" type="text" name="username"
+                    placeholder="Username">
+            </div>
+            <div class="mb-3">
+                <label for="password_input" class="form-label">Password</label>
+                <input id="password_input" class="form-control" type="password" name="password" placeholder="Password">
+            </div>
+            <input class="btn btn-primary" type="submit" value="Login">
+        </form>
+
+        Don't have an account? <a href="{% url 'register' %}">Register here.</a>
+    </div>
+    <div class="col"></div>
+</div>
+
+
+{% endblock %}

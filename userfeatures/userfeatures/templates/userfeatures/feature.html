@@ -1,0 +1,77 @@
+{% extends 'userfeatures/layout_project.html' %}
+
+{% block title %}{{project.name}}: {{feature.title}} {% endblock %}
+
+{% block body %}
+
+
+<div class="container">
+    <style>
+        .vote-outer {
+            padding: 5px
+        }
+
+        .feature {
+            margin-top: 20px;
+        }
+
+        .col-votes {
+            width: 10%;
+        }
+
+        .col-feature {
+            width: 90%;
+        }
+    </style>
+
+    <div class="row feature">
+        <div class="col col-2 col-votes">
+            <div class="row vote-outer">
+                <a class="btn btn-success vote" href="{% url 'feature_upvote' project_id feature_id %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-arrow-up arrow"
+                        viewBox="0 0 16 16">
+                        <path fill-rule="evenodd"
+                            d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z" />
+                    </svg>
+                </a>
+            </div>
+
+            <h1 class="text-center">{{total}}</h1>
+
+            <div class="row vote-outer">
+                <a class="btn btn-warning vote" href="{% url 'feature_downvote' project_id feature_id %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-arrow-down arrow"
+                        viewBox="0 0 16 16">
+                        <path fill-rule="evenodd"
+                            d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div class="col col-10 col-feature">
+            <h3>{{feature.title}}</h3>
+            <p>{{feature.description}}</p>
+        </div>
+    </div>
+
+    <div id="comment">
+        <h3>Comments</h3>
+        {% if user.is_authenticated %}
+        <h4>Leave a comment</h4>
+        <form method="post" action="{% url 'feature_show' project_id feature_id %}">
+            {% csrf_token %}
+            <textarea class="form-control" placeholder="Your comment here..." name="content"></textarea>
+            <input class="btn btn-primary" type="submit" value="Submit">
+        </form>
+        {% endif %}
+
+        {% for comment in comments %}
+        <div>
+            <h5>{{comment.owner}}</h5>
+            <p>{{comment.text}}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

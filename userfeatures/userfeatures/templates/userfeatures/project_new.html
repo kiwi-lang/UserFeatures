@@ -1,0 +1,31 @@
+{% extends 'userfeatures/layout.html' %}
+
+{% block title %}New project{% endblock %}
+
+{% block body %}
+<div class="container">
+    <h1>New project</h1>
+
+    <form id="project_new" action="{% url 'project_new' %}" method="post">
+        {% csrf_token %}
+        <div>
+            <label for="name">Title:</label><br />
+            <input class="form-control" type="text" name="name" required>
+        </div>
+
+        <div>
+            <label for="description">Description:</label><br />
+            <textarea class="form-control" name="description" placeholder="Your description here..."
+                required></textarea><br />
+        </div>
+
+        <div>
+            <label for="image">Upload image URL:</label><br />
+            <input class="form-control" type="url" name="image">
+        </div>
+
+        <div><input type="submit" value="Submit"></div>
+
+    </form>
+</div>
+{% endblock %}

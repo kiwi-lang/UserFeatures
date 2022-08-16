@@ -1,0 +1,24 @@
+{% extends 'userfeatures/layout_project.html' %}
+
+{% block title %}New Feature{% endblock %}
+
+{% block body %}
+<h1>New Feature</h1>
+
+<form id="feature_new" action="{% url 'feature_new' project_id %}" method="post">
+    {% csrf_token %}
+    <div>
+        <label for="title">Title:</label><br />
+        <input class="form-control" type="text" name="title" required>
+    </div>
+
+    <div>
+        <label for="description">Description:</label><br />
+        <textarea class="form-control" name="description" placeholder="Your description here..."
+            required></textarea><br />
+    </div>
+
+    <div><input class="btn btn-primary" type="submit" value="Submit"></div>
+
+</form>
+{% endblock %}
