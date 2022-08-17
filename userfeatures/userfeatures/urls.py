@@ -20,6 +20,7 @@ urlpatterns = [
     path("project/<int:project_id>/tag/<int:tag_id>/page/<int:page>", views.project_show_tags, name="project_show_tag"),
 
     path("project/<int:project_id>/tag/new", views.tag_new, name="tag_new"),
+    path("project/<int:project_id>/feature/find", views.feature_find, name="feature_find"),
     path("project/<int:project_id>/feature/new", views.feature_new, name="feature_new"),
     path("project/<int:project_id>/feature/<int:feature_id>", views.feature_show, name="feature_show"),
     path("project/<int:project_id>/feature/<int:feature_id>/tag", views.feature_tag, name="feature_tag"),

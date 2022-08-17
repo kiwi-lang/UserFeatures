@@ -20,6 +20,7 @@ class ProjectTags(models.Model):
     """Tag used by a project for its features"""
     project = models.ForeignKey(Project, on_delete=models.CASCADE, default="")
     tag = models.CharField(max_length=50)
+    style = models.CharField(max_length=50, blank=True)
 
 
 class Feature(models.Model):

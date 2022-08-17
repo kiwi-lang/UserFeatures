@@ -140,7 +140,11 @@ def project_show(request, project_id, page=0, mode="top", tags=None, all=False):
         features = Feature.objects.filter(project=project_id, tags__in=tags)
 
     elif mode == "top":
-        features = Feature.objects.filter(project=project_id).order_by("-votes")
+        # this does not work, it creates duplicate features
+        # features = Feature.objects.filter(project=project_id).order_by("-votes")
+
+        features = Feature.objects.filter(project=project_id).order_by((F('upvotes') - F('downvotes')).desc())
+        features.query.group_by = ['id']
 
     elif mode == 'latest':
         features = Feature.objects.filter(project=project_id).order_by("-created_datetime")
@@ -172,16 +176,39 @@ def project_show(request, project_id, page=0, mode="top", tags=None, all=False):
     )
 
 
-def feature_find(request, project_hint):
+def feature_find(request, project_id):
     # from django.contrib.postgres.search import SearchVector
 
     # Feature.objects.annotate(
     #     search=SearchVector('name', 'description'),
     # ).filter(search)
 
-    options = Feature.objects.filter(title__search=project_hint)
+    if request.method == "POST":
+        project_hint = request.POST["search"]
+    else:
+        project_hint = request.GET["title"]
 
-    return JsonResponse(options)
+    options = Feature.objects.filter(title__contains=project_hint)
+
+    if request.method == "POST":
+        project = Project.objects.get(id=project_id)
+        tags = ProjectTags.objects.filter(project=project_id)
+
+        return render(
+            request,
+            "userfeatures/project.html",
+            dict(
+                project_id=project_id,
+                project=project,
+                features=options,
+                tags=tags,
+                pages=[],
+            )
+        )
+
+
+    return JsonResponse([dict(title=o.title, id=o.id) for o in options[:10]], safe=False)
+
 
 @login_required
 def feature_new(request, project_id):
@@ -255,8 +282,6 @@ def feature_show(request, project_id, feature_id):
             tags=tags,
         )
     )
-
-
 
 
 def add_vote(request, project_id, feature_id, vote_value):

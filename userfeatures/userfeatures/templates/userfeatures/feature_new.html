@@ -1,24 +1,93 @@
 {% extends 'userfeatures/layout_project.html' %}
 
-{% block title %}New Feature{% endblock %}
+{% block title %}New Suggestion{% endblock %}
 
 {% block body %}
-<h1>New Feature</h1>
+<h1>New Suggestion</h1>
+
+<style>
+    .row {
+        margin-top: 10px;
+    }
+
+    .submit {
+        margin-top: 10px;
+        float: right;
+    }
+</style>
 
 <form id="feature_new" action="{% url 'feature_new' project_id %}" method="post">
     {% csrf_token %}
-    <div>
-        <label for="title">Title:</label><br />
-        <input class="form-control" type="text" name="title" required>
+    <div class="row">
+
+        <div class="col-sm-1">
+            <label for="title">Title:</label><br />
+        </div>
+
+        <div class="col-sm-11">
+            <input id="title" class="form-control" type="text" name="title" autocomplete="off" required>
+        </div>
+
+
     </div>
 
-    <div>
-        <label for="description">Description:</label><br />
-        <textarea class="form-control" name="description" placeholder="Your description here..."
-            required></textarea><br />
+    <div class="row">
+        <div class="col-sm-1"></div>
+        <div class="col-sm-11">
+            <div id="similar-issues" class="alert alert-warning">
+                <h6>Similar issues</h6>
+                <ul id="similar"></ul>
+            </div>
+        </div>
     </div>
 
-    <div><input class="btn btn-primary" type="submit" value="Submit"></div>
+    <div class="row">
+        <div class="col-sm-1">
+            <label for="description">Description:</label>
+        </div>
+        <div class="col-sm-11">
+            <textarea class="form-control" name="description" placeholder="Your description here..."
+                required></textarea>
+        </div>
+    </div>
+
+
+    <div class="submit">
+        <input class="btn btn-primary" type="submit" value="Submit">
+    </div>
+
 
 </form>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+<script>
+
+
+    $(document).ready(function () {
+        $("#similar-issues").hide()
+
+        $("#title").keyup(function () {
+            $.getJSON(
+                "{% url 'feature_find' project.id %}",
+                {
+                    "title": $("#title").val()
+                }).done(function (data) {
+                    if (data.length == 0) {
+                        $("#similar-issues").hide();
+                        return;
+                    }
+
+                    $("#similar-issues").show();
+                    $("#similar").empty();
+
+                    $.each(data, function (index, value) {
+                        $("#similar").append("<li>" + value.title + "</li>");
+                    });
+                });
+        });
+    });
+
+</script>
 {% endblock %}
