@@ -15,15 +15,18 @@
         max-width: 1300px;
         max-height: 512px;
     }
+
+    #description {
+        margin: 20px;
+    }
 </style>
 
 <div class="row">
     <img class="center" src="{{project.banner}}"></img>
-
 </div>
 
-<div>
-    {{project.description}}
+<div id="description">
+
 </div>
 
 <style>
@@ -187,5 +190,13 @@
         {% endfor %}
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    document.getElementById('description').innerHTML =
+        marked.parse('{{project.description|escapejs}}');
+</script>
+
+
 
 {% endblock %}

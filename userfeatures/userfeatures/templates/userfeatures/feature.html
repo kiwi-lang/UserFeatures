@@ -6,6 +6,9 @@
 
 {% block body %}
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+
 
 <div class="container">
     <style>
@@ -117,9 +120,13 @@
                 <span class="badge bg-secondary">{{tag.tag}}</span>
                 {% endfor %}
             </div>
-            <p>{{feature.description}}</p>
+            <div id="description"></div>
         </div>
     </div>
+
+    <script>
+        document.getElementById('description').innerHTML = marked.parse('{{feature.description|escapejs}}');
+    </script>
 
     <div id="comments">
         <h3>Comments</h3>
@@ -134,9 +141,14 @@
                     <p class="date">{{comment.created_datetime}}</p>
                 </div>
             </div>
-            <div class="col col-10 comment-text">
-                <p>{{comment.text}}</p>
+            <div class="col col-10 comment-text" id="comment-id{{comment.id}}">
+
             </div>
+
+            <script>
+                document.getElementById('comment-id{{comment.id}}').innerHTML =
+                    marked.parse('{{comment.text|escapejs}}');
+            </script>
         </div>
         {% endfor %}
 
@@ -152,5 +164,6 @@
         {% endif %}
     </div>
 </div>
+
 
 {% endblock %}
