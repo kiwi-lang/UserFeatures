@@ -6,8 +6,11 @@ from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Max, F
+
+
 
 from .models import User, Project, Feature, ProjectTags, Comment, Votes
 
@@ -170,7 +173,15 @@ def project_show(request, project_id, page=0, mode="top", tags=None, all=False):
 
 
 def feature_find(request, project_hint):
-    pass
+    # from django.contrib.postgres.search import SearchVector
+
+    # Feature.objects.annotate(
+    #     search=SearchVector('name', 'description'),
+    # ).filter(search)
+
+    options = Feature.objects.filter(title__search=project_hint)
+
+    return JsonResponse(options)
 
 @login_required
 def feature_new(request, project_id):
