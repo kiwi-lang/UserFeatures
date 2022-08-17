@@ -2,9 +2,10 @@
 
 {% block title %}{{project.name}}{% endblock %}
 
+
+{% load number %}
+
 {% block body %}
-
-
 
 <style>
     .center {
@@ -21,7 +22,6 @@
 
 </div>
 
-
 <div>
     {{project.description}}
 </div>
@@ -33,11 +33,29 @@
     }
 
     .feature {
-        outline: 1px solid #ccc;
         margin: 5px;
-        padding: 1px;
-        display: table;
+        padding: 2px;
+        display: block;
         width: 100%;
+
+        border-radius: .375rem;
+        outline: 1px solid #ccc;
+    }
+
+    a.feature-link {
+        color: black
+    }
+
+    a.feature-link:visited {
+        color: rgb(63, 63, 63)
+    }
+
+    a.feature-link:active {
+        color: rgb(109, 109, 109)
+    }
+
+    .feature:hover {
+        outline: 1px solid rgb(143, 143, 143);
     }
 
     .col-cell {
@@ -71,20 +89,63 @@
         margin: 0px;
         text-align: center;
     }
+
+    .feature-title {
+        display: inline-block;
+    }
+
+    .filters {
+        float: right;
+    }
+
+    .pages {
+        text-align: center;
+    }
 </style>
 
-<h1>Feature Requests</h1>
+
 <div class="container">
+
+    <div>
+        <h1 class="feature-title">Feature Requests</h1>
+
+        <div class="filters">
+            <div class="btn-group" role="group" aria-label="Basic example">
+                <a class="btn btn-secondary" href="{% url 'project_show_top' project_id 0 %}">Top</a>
+                <a class="btn btn-secondary" href="{% url 'project_show_rising' project_id 0 %}">Rising</a>
+                <a class="btn btn-secondary" href="{% url 'project_show_latest' project_id 0 %}">Latest</a>
+            </div>
+
+            <!--
+                <a class="btn btn-secondary" href="">All ({{feature_count}})</a>
+            -->
+            <div class="btn-group">
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        By Tags
+                    </button>
+                    <ul class="dropdown-menu">
+                        {% for tag in tags %}
+                        <li><a class="dropdown-item"
+                                href="{% url 'project_show_tag' project_id tag.id 0 %}">{{tag.tag}}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     {% for feature in features %}
     <div class="row feature">
         <div class="col col-cell col-upvotes">
-            <p class="upvote-count">{{feature.upvotes}}</p>
+            <p class="upvote-count">{{ feature.upvotes|short_number:feature.downvotes }}</p>
         </div>
         <div class="col col-cell col-btn">
             <div class="row vote-outer">
-                <a class="btn btn-success vote" href="{% url 'feature_upvote' project_id feature.id %}">
+                <a class="btn btn-success vote" href="{% url 'feature_upvote_project' project_id feature.id %}">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-arrow-up arrow"
                         viewBox="0 0 16 16">
                         <path fill-rule="evenodd"
@@ -94,7 +155,7 @@
             </div>
 
             <div class="row vote-outer">
-                <a class="btn btn-warning vote" href="{% url 'feature_downvote' project_id feature.id %}">
+                <a class="btn btn-warning vote" href="{% url 'feature_downvote_project' project_id feature.id %}">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-arrow-down arrow"
                         viewBox="0 0 16 16">
                         <path fill-rule="evenodd"
@@ -104,15 +165,27 @@
             </div>
         </div>
 
-        <a href="{% url 'feature_show' project_id feature.id %}" class="block-link ">
+        <a href="{% url 'feature_show' project_id feature.id %}" class="block-link feature-link">
             <div class="col-10 col-very-big">
 
                 <h3>{{feature.title}}</h3>
 
             </div>
+            <div class="tags">
+                {% for tag in feature.tags.all %}
+                <span class="badge bg-secondary">{{tag.tag}}</span>
+                {% endfor %}
+            </div>
         </a>
+
     </div>
     {% endfor %}
+
+    <div class="pages">
+        {% for page in pages %}
+        <a class="btn btn-secondary" href="{% url 'project_show' project_id page %}">{{page}}</a>
+        {% endfor %}
+    </div>
 </div>
 
 {% endblock %}

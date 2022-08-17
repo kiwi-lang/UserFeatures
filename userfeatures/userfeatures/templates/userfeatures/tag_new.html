@@ -1,0 +1,33 @@
+{% extends 'userfeatures/layout_project.html' %}
+
+{% block title %}New Tag{% endblock %}
+
+{% block body %}
+
+<h2>Current Tags</h2>
+<ul>
+    {% for tag in tags %}
+    <span class="badge bg-secondary">{{tag.tag}}</span>
+    {% endfor %}
+</ul>
+
+
+<h2>New Tag</h2>
+
+<form id="tag_new" action="{% url 'tag_new' project_id %}" method="post">
+    {% csrf_token %}
+
+    <div class="mb-3 row">
+        <div class="col-sm-1">
+            <label for="name">Tag:</label><br />
+        </div>
+        <div class="col-sm-10">
+            <input class="form-control" type="text" name="name" required>
+        </div>
+
+        <div class="col-sm-1">
+            <input class="btn btn-primary" type="submit" value="Submit">
+        </div>
+    </div>
+</form>
+{% endblock %}

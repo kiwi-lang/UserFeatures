@@ -2,6 +2,8 @@
 
 {% block title %}{{project.name}}: {{feature.title}} {% endblock %}
 
+{% load number %}
+
 {% block body %}
 
 
@@ -22,6 +24,46 @@
         .col-feature {
             width: 90%;
         }
+
+        .feature-title-div {
+            display: inline-block;
+            width: 100%;
+        }
+
+        .feature-title {
+            display: inline;
+        }
+
+        .feature-tag-from {
+            float: right;
+        }
+
+        .submit-comment {
+            float: right;
+            margin-top: 10px;
+        }
+
+        .comment-text {
+            border-radius: .375rem;
+            outline: 1px solid #ccc;
+        }
+
+        .comment-author {
+            float: right;
+            font-weight: bold;
+        }
+
+        .comment-form {
+            margin-top: 50px;
+        }
+
+        .comment {
+            margin-top: 10px;
+        }
+
+        .date {
+            font-size: 10px;
+        }
     </style>
 
     <div class="row feature">
@@ -36,7 +78,7 @@
                 </a>
             </div>
 
-            <h1 class="text-center">{{total}}</h1>
+            <h1 class="text-center">{{feature.upvotes|short_number:feature.downvotes}}</h1>
 
             <div class="row vote-outer">
                 <a class="btn btn-warning vote" href="{% url 'feature_downvote' project_id feature_id %}">
@@ -48,29 +90,66 @@
                 </a>
             </div>
         </div>
+
         <div class="col col-10 col-feature">
-            <h3>{{feature.title}}</h3>
+            <div class="feature-title-div">
+                <h3 class="feature-title">{{feature.title}}</h3>
+                {% if user.is_authenticated and user == project.owner %}
+                <div class="feature-tag-from">
+                    <form class="row g-3" method="post" action="{% url 'feature_tag' project_id feature_id %}">
+                        {% csrf_token %}
+                        <div class="col-auto">
+                            <select name="tag" class="form-select" aria-label="Add Tag">
+                                {% for tag in tags %}
+                                <option value="{{tag.id}}">{{tag.tag}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <input class="btn btn-primary" type="submit" value="Add Tag">
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            <div class="tags">
+                {% for tag in feature.tags.all %}
+                <span class="badge bg-secondary">{{tag.tag}}</span>
+                {% endfor %}
+            </div>
             <p>{{feature.description}}</p>
         </div>
     </div>
 
-    <div id="comment">
+    <div id="comments">
         <h3>Comments</h3>
-        {% if user.is_authenticated %}
-        <h4>Leave a comment</h4>
-        <form method="post" action="{% url 'feature_show' project_id feature_id %}">
-            {% csrf_token %}
-            <textarea class="form-control" placeholder="Your comment here..." name="content"></textarea>
-            <input class="btn btn-primary" type="submit" value="Submit">
-        </form>
-        {% endif %}
 
         {% for comment in comments %}
-        <div>
-            <h5>{{comment.owner}}</h5>
-            <p>{{comment.text}}</p>
+        <div class="row comment">
+            <div class="col col-2 comment-author">
+                <div class="row">
+                    <p>{{comment.owner}}</p>
+                </div>
+                <div class="row">
+                    <p class="date">{{comment.created_datetime}}</p>
+                </div>
+            </div>
+            <div class="col col-10 comment-text">
+                <p>{{comment.text}}</p>
+            </div>
         </div>
         {% endfor %}
+
+        {% if user.is_authenticated %}
+        <div class="comment-form">
+            <h4>Leave a comment</h4>
+            <form method="post" action="{% url 'feature_show' project_id feature_id %}">
+                {% csrf_token %}
+                <textarea class="form-control" placeholder="Your comment here..." name="content"></textarea>
+                <input class="btn btn-primary submit-comment" type="submit" value="Submit">
+            </form>
+        </div>
+        {% endif %}
     </div>
 </div>
 

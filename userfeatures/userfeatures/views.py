@@ -1,3 +1,6 @@
+import math
+import datetime
+
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
@@ -6,7 +9,7 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Max, F
 
-from .models import User, Project, Feature, ProjectTags, Comment, FeatureTags, Watchlist
+from .models import User, Project, Feature, ProjectTags, Comment, Votes
 
 
 def index(request):
@@ -110,9 +113,47 @@ def project_find(request):
     pass
 
 
-def project_show(request, project_id):
+def project_show_top(request, project_id, page=0):
+    return project_show(request, project_id, page, mode="top")
+
+
+def project_show_rising(request, project_id, page=0):
+    return project_show(request, project_id, page, mode="rising")
+
+
+def project_show_latest(request, project_id, page=0):
+    return project_show(request, project_id, page, mode="latest")
+
+
+def project_show_tags(request, project_id, tag_id, page=0):
+    return project_show(request, project_id, page, mode="top", tags=(tag_id,))
+
+def project_show(request, project_id, page=0, mode="top", tags=None, all=False):
+    step = 50
+
     project = Project.objects.get(id=project_id)
-    features = Feature.objects.filter(project=project_id)[:50]
+
+    if tags is not None:
+        features = Feature.objects.filter(project=project_id, tags__in=tags)
+
+    elif mode == "top":
+        features = Feature.objects.filter(project=project_id).order_by("-votes")
+
+    elif mode == 'latest':
+        features = Feature.objects.filter(project=project_id).order_by("-created_datetime")
+
+    elif mode == 'rising':
+        features = Feature.objects.filter(project=project_id).order_by("-updated_datetime")
+
+    else:
+        features = Feature.objects.filter(project=project_id)
+
+    tags = ProjectTags.objects.filter(project=project_id)
+    feature_count = len(Feature.objects.filter(project=project_id))
+    page_count = math.ceil(feature_count / step)
+
+    if not all:
+        features = features[step * page:step * (page + 1)]
 
     return render(
         request,
@@ -121,13 +162,21 @@ def project_show(request, project_id):
             project_id=project_id,
             project=project,
             features=features,
+            tags=tags,
+            feature_count=feature_count,
+            pages=range(page_count) if page_count > 1 else [],
         )
     )
 
 
+def feature_find(request, project_hint):
+    pass
+
 @login_required
 def feature_new(request, project_id):
+
     if request.method == "POST":
+        # Every user can create new features
         feature = Feature.objects.create(
             title=request.POST["title"],
             description=request.POST["description"],
@@ -149,16 +198,38 @@ def feature_new(request, project_id):
         dict(project_id=project_id, project=project)
     )
 
+@login_required
+def feature_tag(request, project_id, feature_id):
+    """Add a tag to a given feature"""
+
+    if request.method == "POST":
+        project = Project.objects.get(id=project_id)
+
+        # Only the project owner can create tags
+        if project.owner == request.user:
+            tag_ids = request.POST["tag"]
+            feature = Feature.objects.get(id=feature_id)
+            for tag_id in tag_ids:
+                feature.tags.add(tag_id)
+            feature.save()
+
+    return redirect(feature_show, project_id, feature_id)
+
 
 @login_required
 def feature_show(request, project_id, feature_id):
     if request.method == "POST":
-        # Add Comment
-        pass
+        comment = Comment.objects.create(
+            owner=request.user,
+            feature=Feature.objects.get(id=feature_id),
+            text=request.POST["content"],
+        )
+        comment.save()
 
     project = Project.objects.get(id=project_id)
     feature = Feature.objects.get(id=feature_id)
     comments = Comment.objects.filter(feature_id=feature_id)
+    tags = ProjectTags.objects.filter(project=project)
 
     return render(
         request,
@@ -169,144 +240,113 @@ def feature_show(request, project_id, feature_id):
             feature_id=feature_id,
             feature=feature,
             comments=comments,
-            total=feature.upvotes - feature.downvotes
+            total=feature.upvotes - feature.downvotes,
+            tags=tags,
         )
     )
 
 
-@login_required
-def feature_upvote(request, project_id, feature_id):
-    Feature.objects.filter(id=feature_id).update(upvotes=F('upvotes') + 1)
-    return redirect(feature_show, project_id, feature_id)
 
 
-@login_required
-def feature_downvote(request, project_id, feature_id):
-    Feature.objects.filter(id=feature_id).update(downvotes=F('downvotes') + 1)
-    return redirect(feature_show, project_id, feature_id)
+def add_vote(request, project_id, feature_id, vote_value):
+    old_vote = 0
+    feature = Feature.objects.get(id=feature_id)
+
+    try:
+        vote = Votes.objects.get(
+            owner=request.user,
+            feature=feature,
+        )
+        old_vote = vote.vote
+        vote.vote = vote_value
+
+    except Votes.DoesNotExist:
+        vote = Votes.objects.create(
+            owner=request.user,
+            feature=feature,
+            vote=vote_value,
+        )
+
+    vote.save()
+    return old_vote
 
 
-# Display current user's watchlist
-@login_required
-def watchlist(request):
+def user_vote(request, project_id, feature_id, vote_value):
+    """The accounting does not need to be perfect all the time.
+    To lessen the computation impact we could just to a update_or_create a vote,
+    and have a background task update the counts periodically.
+    """
+    old_vote = add_vote(request, project_id, feature_id, vote_value)
 
-    if request.method == "POST":
-        id = request.POST.get("listing_id")
-        listing = AuctionListing.objects.get(id=id)
-        if "remove" in request.POST:
-            Watchlist.objects.filter(user=request.user, listing=listing).delete()
-            return HttpResponseRedirect(reverse("listing", args=[id, listing.title]))
+    # we are voting the same so ignore
+    if old_vote == vote_value:
+        return
+
+    # this is a new vote
+    if old_vote == 0:
+        if vote_value > 0:
+            Feature.objects.filter(id=feature_id).update(upvotes=F('upvotes') + 1, updated_datetime=datetime.datetime.now())
         else:
-            add_watchlist = Watchlist.objects.create(user=request.user, listing=listing)
-            add_watchlist.save()
+            Feature.objects.filter(id=feature_id).update(downvotes=F('downvotes') + 1, updated_datetime=datetime.datetime.now())
 
-    users_watchlist: Watchlist = Watchlist.objects.filter(user=request.user)
-    listings = list()
-    for listing in users_watchlist:
-        listings.append(getattr(listing, "listing"))
-    return render(
-        request,
-        "userfeatures/watchlist.html",
-        {"listings": listings},
-    )
-
-
-# Place for creating new lisitng (only for logged in user)
-# @login_required
-# def feature_new(request):
-#     if request.method == "POST":
-#         title = request.POST["title"]
-#         description = request.POST["description"]
-#         start_bid = request.POST["start_bid"]
-#         image_url = request.POST["image"]
-#         category = request.POST.get("category")
-#         current_user = request.user
-#         l = AuctionListing.objects.create(
-#             title=title,
-#             description=description,
-#             start_bid=start_bid,
-#             image=image_url,
-#             category=category,
-#             creator=current_user,
-#         )
-#         l.save()
-#         return redirect(listing, l.id, l.title)
-#     else:
-#         return render(
-#             request,
-#             "userfeatures/feature_new.html",
-#             {"categories": Category.objects.all()},
-#         )
-
-
-# List all categories, clicking on category name
-# redirects user to list of active listings in that category
-def categories(request):
-    return render(
-        request,
-        "userfeatures/categories.html",
-        {
-            "categories": Category.objects.all(),
-            "no_category": AuctionListing.objects.filter(category__isnull=True).count(),
-        },
-    )
-
-
-def category(request, category):
-    # If no category, filters all lisings with null category and lists all listings without Category
-    if category == "Other":
-        return render(
-            request,
-            "userfeatures/category_page.html",
-            {
-                "listings": AuctionListing.objects.filter(category__isnull=True),
-                "category": category,
-            },
-        )
     else:
-        category_id = Category.objects.get(category=category).id
-        return render(
-            request,
-            "userfeatures/category_page.html",
-            {
-                "listings": AuctionListing.objects.filter(category=category_id),
-                "category": category,
-            },
-        )
-
-
-def listing(request, id, title):
-    if request.method == "POST":
-        listing = AuctionListing.objects.get(id=id)
-        if "close" in request.POST:
-            listing.active = False
-            listing.save()
-            # bids = Bid.objects.filter(listing=listing)
-            # highest = bids.aggregate(Max("amount"))
-            # if highest is None:
-            #   listing.winner = None
-            # else:
-            #    listing.winner = getattr(
-            #        Bid.objects.get(listing=listing, amount=highest), "bidder"
-            #    )
-        else:
-            commenter = request.user
-            content = request.POST.get("content")
-
-            comment = Comment.objects.create(
-                content=content, commenter=commenter, listing=listing
+        # We changed our vote
+        if vote_value > 0:
+            Feature.objects.filter(id=feature_id).update(
+                upvotes=F('upvotes') + 1, downvotes=F('downvotes') - 1, updated_datetime=datetime.datetime.now()
             )
-            comment.save()
-            return HttpResponseRedirect(request.path_info)
+        else:
+            Feature.objects.filter(id=feature_id).update(
+                upvotes=F('upvotes') - 1, downvotes=F('downvotes') + 1, updated_datetime=datetime.datetime.now()
+            )
+
+
+@login_required
+def feature_downvote_project(request, project_id, feature_id):
+    return feature_downvote(request, project_id, feature_id, False)
+
+
+@login_required
+def feature_upvote_project(request, project_id, feature_id):
+    return feature_upvote(request, project_id, feature_id, False)
+
+
+@login_required
+def feature_upvote(request, project_id, feature_id, feature=True):
+
+    user_vote(request, project_id, feature_id, 1)
+
+    if feature:
+        return redirect(feature_show, project_id, feature_id)
+
+    return redirect(project_show, project_id)
+
+
+@login_required
+def feature_downvote(request, project_id, feature_id, feature=True):
+    user_vote(request, project_id, feature_id, -1)
+
+    if feature:
+        return redirect(feature_show, project_id, feature_id)
+
+    return redirect(project_show, project_id)
+
+
+@login_required
+def tag_new(request, project_id):
+    project = Project.objects.get(id=project_id)
+    tags = ProjectTags.objects.filter(project=project_id)
+
+    if request.method == "POST":
+        if project.owner == request.user:
+            tag = ProjectTags.objects.create(
+                tag=request.POST["name"],
+                project=project,
+            )
+            tag.save()
+
     return render(
         request,
-        "userfeatures/listing.html",
-        {
-            "listing": AuctionListing.objects.get(id=id),
-            "comments": Comment.objects.filter(listing=id),
-            "in_watchlist": Watchlist.objects.filter(
-                listing=id, user=request.user
-            ).count(),
-            "winner": getattr(AuctionListing.objects.get(id=id), "winner"),
-        },
+        "userfeatures/tag_new.html",
+        dict(project_id=project_id, project=project, tags=tags)
     )

@@ -13,6 +13,14 @@ class Project(models.Model):
     description = models.TextField()
     banner = models.ImageField(upload_to="project_banners/", blank=True)
 
+    created_datetime = models.DateTimeField(auto_now_add=True)
+
+
+class ProjectTags(models.Model):
+    """Tag used by a project for its features"""
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, default="")
+    tag = models.CharField(max_length=50)
+
 
 class Feature(models.Model):
     """A feature request that was submitted by a user"""
@@ -24,6 +32,28 @@ class Feature(models.Model):
     upvotes = models.IntegerField(default=1)
     downvotes = models.IntegerField(default=0)
 
+    created_datetime = models.DateTimeField(auto_now_add=True)
+    updated_datetime = models.DateTimeField(auto_now_add=True)
+
+    tags = models.ManyToManyField(ProjectTags)
+
+    @property
+    def votes(self):
+        return self.upvotes - self.downvotes
+
+
+class Votes(models.Model):
+    """Table to record user votes on features, to prevent user from voting twice"""
+
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, default="")
+    feature = models.ForeignKey(Feature, on_delete=models.CASCADE, default="")
+    vote = models.IntegerField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['owner', 'feature'], name='unique_votes')
+        ]
+
 
 class Comment(models.Model):
     """A comment on a feature request"""
@@ -31,17 +61,7 @@ class Comment(models.Model):
     feature = models.ForeignKey(Feature, on_delete=models.CASCADE, default="")
     text = models.TextField()
 
-
-class ProjectTags(models.Model):
-    """Tag used by a project for its features"""
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, default="")
-    tag = models.CharField(max_length=50)
-
-
-class FeatureTags(models.Model):
-    """Tags for a feature request"""
-    feature = models.ForeignKey(Feature, on_delete=models.CASCADE, default="")
-    tag = models.ForeignKey(ProjectTags, on_delete=models.CASCADE, default="")
+    created_datetime = models.DateTimeField(auto_now_add=True)
 
 
 class Watchlist(models.Model):
