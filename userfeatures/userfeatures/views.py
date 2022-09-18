@@ -44,7 +44,7 @@ def index(request):
     )
 
 
-def login_view(request):
+def login_view(request, project_id=None):
     if request.method == "POST":
 
         # Attempt to sign user in
@@ -55,6 +55,10 @@ def login_view(request):
         # Check if authentication successful
         if user is not None:
             login(request, user)
+
+            if project_id is not None:
+                return render(project_show, project_id)
+
             return HttpResponseRedirect(reverse("index"))
         else:
             return render(
@@ -71,7 +75,7 @@ def logout_view(request):
     return HttpResponseRedirect(reverse("index"))
 
 
-def register(request):
+def register(request, project_id=None):
     if request.method == "POST":
         username = request.POST["username"]
         email = request.POST["email"]
@@ -96,6 +100,10 @@ def register(request):
                 {"message": "Username already taken."},
             )
         login(request, user)
+
+        if project_id is not None:
+            return render(project_show, project_id)
+
         return HttpResponseRedirect(reverse("index"))
     else:
         return render(request, "userfeatures/login_register.html")
