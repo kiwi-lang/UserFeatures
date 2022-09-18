@@ -8,6 +8,12 @@
 
     <link href="{% static 'userfeatures/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'userfeatures/styles.css' %}" rel="stylesheet">
+
+    <script src="{% static 'userfeatures/marked.min.js' %}"></script>
+    <script src="{% static 'userfeatures/jquery.js' %}"></script>
+    <script src="{% static 'userfeatures/jquery-ui.js' %}"></script>
+    <script src="{% static 'userfeatures/bootstrap.js' %}"></script>
+
 </head>
 
 <body class="">
@@ -50,6 +56,8 @@
                                     <hr class="dropdown-divider">
                                 </li>
                                 <li><a class="dropdown-item" href="{% url 'logout' %}">Disable Project</a></li>
+                                <li><a class="dropdown-item" href="{% url 'project_delete' project.id %}">Delete
+                                        Project</a></li>
                             </ul>
                         </li>
                         {% endif %}
@@ -78,14 +86,16 @@
             </div>
         </nav>
 
+
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{error}}
+        </div>
+        {% endif %}
+
         {% block body %}
         {% endblock %}
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
-        crossorigin="anonymous"></script>
-
 </body>
 
 </html>

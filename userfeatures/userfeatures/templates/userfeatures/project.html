@@ -2,7 +2,7 @@
 
 {% block title %}{{project.name}}{% endblock %}
 
-
+{% load static %}
 {% load number %}
 
 {% block body %}
@@ -100,7 +100,6 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
     document.getElementById('description').innerHTML =
         marked.parse('{{project.description|escapejs}}');

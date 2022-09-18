@@ -144,6 +144,8 @@ def project_delete(request, project_id):
     if project.owner == request.user:
         Project.objects.get(id=project_id).delete()
 
+    return redirect(profile)
+
 
 def project_find(request):
     pass
@@ -279,6 +281,7 @@ def feature_delete(request, project_id, feature_id):
     if project.owner == request.user:
         Feature.objects.get(id=feature_id).delete()
 
+    return redirect(project_show, project_id)
 
 @login_required
 def feature_tag_add(request, project_id, feature_id):
@@ -303,14 +306,13 @@ def feature_tag_add(request, project_id, feature_id):
 def feature_tag_remove(request, project_id, feature_id, tag_id):
     """Add a tag to a given feature"""
 
-    if request.method == "POST":
-        project = Project.objects.get(id=project_id)
+    project = Project.objects.get(id=project_id)
 
-        # Only the project owner can remove tags
-        if project.owner == request.user:
-            feature = Feature.objects.get(id=feature_id)
-            feature.tags.remove(tag_id)
-            feature.save()
+    # Only the project owner can remove tags
+    if project.owner == request.user:
+        feature = Feature.objects.get(id=feature_id)
+        feature.tags.remove(tag_id)
+        feature.save()
 
     return redirect(feature_show, project_id, feature_id)
 
@@ -460,15 +462,18 @@ def tag_new(request, project_id):
 @login_required
 def tag_delete(request, project_id, tag_id):
     project = Project.objects.get(id=project_id)
+    error = None
+
+    if project.owner == request.user:
+        p = ProjectTags.objects.get(id=tag_id, project=project)
+        p.delete()
+    else:
+        error = f'Not project owner'
+
     tags = ProjectTags.objects.filter(project=project_id)
-
-    if request.method == "POST":
-        if project.owner == request.user:
-            ProjectTags.objects.get(id=tag_id).delete()
-
     return render(
         request,
         "userfeatures/tag_new.html",
-        dict(project_id=project_id, project=project, tags=tags)
+        dict(project_id=project_id, project=project, tags=tags, error=error)
     )
 

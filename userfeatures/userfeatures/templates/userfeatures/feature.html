@@ -6,8 +6,6 @@
 
 {% block body %}
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
 <div class="container">
 
     <div class="row feature-margin">
@@ -52,13 +50,22 @@
                         <div class="col-auto">
                             <input class="btn btn-primary" type="submit" value="Add Tag">
                         </div>
+                        <div class="col-auto">
+                            <a class="btn btn-danger" href="{% url 'feature_delete' project_id feature_id %}">Delete</a>
+                        </div>
                     </form>
                 </div>
             </div>
             {% endif %}
             <div class="tags">
                 {% for tag in feature.tags.all %}
-                <span class="badge bg-secondary">{{tag.tag}}</span>
+
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <a class="badge btn btn-secondary">{{tag.tag}}</a>
+                    <a class="badge btn btn-secondary"
+                        href="{% url 'feature_tag_remove' project_id feature_id tag.id %}">X</a>
+                </div>
+
                 {% endfor %}
             </div>
             <div id="description"></div>
