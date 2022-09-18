@@ -23,6 +23,7 @@ urlpatterns = [
     path("project/<int:project_id>/feature/find", views.feature_find, name="feature_find"),
     path("project/<int:project_id>/feature/new", views.feature_new, name="feature_new"),
     path("project/<int:project_id>/feature/<int:feature_id>", views.feature_show, name="feature_show"),
+    path("project/<int:project_id>/feature/<int:feature_id>/comment", views.feature_comment, name="feature_comment"),
     path("project/<int:project_id>/feature/<int:feature_id>/tag", views.feature_tag, name="feature_tag"),
 
     path("project/<int:project_id>/feature/<int:feature_id>/up", views.feature_upvote, name="feature_upvote"),

@@ -155,7 +155,7 @@
         {% if user.is_authenticated %}
         <div class="comment-form">
             <h4>Leave a comment</h4>
-            <form method="post" action="{% url 'feature_show' project_id feature_id %}">
+            <form method="post" action="{% url 'feature_comment' project_id feature_id %}">
                 {% csrf_token %}
                 <textarea class="form-control" placeholder="Your comment here..." name="content"></textarea>
                 <input class="btn btn-primary submit-comment" type="submit" value="Submit">

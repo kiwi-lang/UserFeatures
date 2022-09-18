@@ -8,11 +8,11 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import F
 
 
-from .models import User, Project, Feature, ProjectTags, Comment, Votes, Setting, UserSetting
+from .models import User, Project, Feature, ProjectTags, Comment, Votes, Setting, UserSetting, voter_group
 
 
 
@@ -21,6 +21,7 @@ class Settings(Enum):
     enable_anonymous_voting = auto()
 
 
+# this should probably be permissions
 class UserSettings(Enum):
     can_create_projects = auto()
     can_comment = auto()
@@ -113,6 +114,7 @@ def register(request):
         try:
             user = User.objects.create_user(username, email, password)
             user.save()
+            voter_group.user_set.add(user)
         except IntegrityError:
             return render(
                 request,
@@ -137,7 +139,9 @@ def profile(request):
         ),
     )
 
+
 @login_required
+@permission_required('userfeatures.can_create_projects')
 def project_new(request):
 
     if request.method == "POST":
@@ -304,8 +308,7 @@ def feature_tag(request, project_id, feature_id):
     return redirect(feature_show, project_id, feature_id)
 
 
-@login_required
-def feature_show(request, project_id, feature_id):
+def feature_comment(request, project_id, feature_id):
     if request.method == "POST":
         comment = Comment.objects.create(
             owner=request.user,
@@ -314,6 +317,10 @@ def feature_show(request, project_id, feature_id):
         )
         comment.save()
 
+    return redirect(feature_show, project_id, feature_id)
+
+
+def feature_show(request, project_id, feature_id):
     project = Project.objects.get(id=project_id)
     feature = Feature.objects.get(id=feature_id)
     comments = Comment.objects.filter(feature_id=feature_id)
@@ -364,7 +371,8 @@ def user_vote(request, project_id, feature_id, vote_value):
     To lessen the computation impact we could just to a update_or_create a vote,
     and have a background task update the counts periodically.
     """
-    if not request.user.is_authenticated:
+
+    if not request.user.is_authenticated or not request.user.has_permission("userfeatures.can_vote"):
         if vote_value > 0:
             Feature.objects.filter(id=feature_id).update(upvotes=F('anon_upvotes') + 1, updated_datetime=datetime.datetime.now())
         else:
