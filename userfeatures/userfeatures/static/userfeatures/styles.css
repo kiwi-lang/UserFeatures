@@ -28,7 +28,7 @@ body {
     display: inline;
 }
 
-.feature-title {
+.project-feature-title {
     display: inline-block;
 }
 
@@ -82,7 +82,7 @@ body {
 
 
 .vote-outer {
-    padding: 5px
+    padding: 0px
 }
 
 .vote-sml {
