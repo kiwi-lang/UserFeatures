@@ -6,70 +6,9 @@
 
 {% block body %}
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-
-
 <div class="container">
-    <style>
-        .vote-outer {
-            padding: 5px
-        }
 
-        .feature {
-            margin-top: 20px;
-        }
-
-        .col-votes {
-            width: 10%;
-        }
-
-        .col-feature {
-            width: 90%;
-        }
-
-        .feature-title-div {
-            display: inline-block;
-            width: 100%;
-        }
-
-        .feature-title {
-            display: inline;
-        }
-
-        .feature-tag-from {
-            float: right;
-        }
-
-        .submit-comment {
-            float: right;
-            margin-top: 10px;
-        }
-
-        .comment-text {
-            border-radius: .375rem;
-            outline: 1px solid #ccc;
-        }
-
-        .comment-author {
-            float: right;
-            font-weight: bold;
-        }
-
-        .comment-form {
-            margin-top: 50px;
-        }
-
-        .comment {
-            margin-top: 10px;
-        }
-
-        .date {
-            font-size: 10px;
-        }
-    </style>
-
-    <div class="row feature">
+    <div class="row feature-margin">
         <div class="col col-2 col-votes">
             <div class="row vote-outer">
                 <a class="btn btn-success vote" href="{% url 'feature_upvote' project_id feature_id %}">
@@ -99,7 +38,7 @@
                 <h3 class="feature-title">{{feature.title}}</h3>
                 {% if user.is_authenticated and user == project.owner %}
                 <div class="feature-tag-from">
-                    <form class="row g-3" method="post" action="{% url 'feature_tag' project_id feature_id %}">
+                    <form class="row g-3" method="post" action="{% url 'feature_tag_add' project_id feature_id %}">
                         {% csrf_token %}
                         <div class="col-auto">
                             <select name="tag" class="form-select" aria-label="Add Tag">
@@ -111,13 +50,25 @@
                         <div class="col-auto">
                             <input class="btn btn-primary" type="submit" value="Add Tag">
                         </div>
+                        <div class="col-auto">
+                            <a class="btn btn-danger" href="{% url 'feature_delete' project_id feature_id %}">Delete</a>
+                        </div>
                     </form>
                 </div>
             </div>
             {% endif %}
             <div class="tags">
                 {% for tag in feature.tags.all %}
-                <span class="badge bg-secondary">{{tag.tag}}</span>
+
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <a class="badge btn btn-secondary">{{tag.tag}}</a>
+
+                    {% if user.is_authenticated and user == project.owner %}
+                    <a class="badge btn btn-secondary"
+                        href="{% url 'feature_tag_remove' project_id feature_id tag.id %}">X</a>
+                    {% endif %}
+                </div>
+
                 {% endfor %}
             </div>
             <div id="description"></div>
@@ -155,7 +106,7 @@
         {% if user.is_authenticated %}
         <div class="comment-form">
             <h4>Leave a comment</h4>
-            <form method="post" action="{% url 'feature_show' project_id feature_id %}">
+            <form method="post" action="{% url 'feature_comment' project_id feature_id %}">
                 {% csrf_token %}
                 <textarea class="form-control" placeholder="Your comment here..." name="content"></textarea>
                 <input class="btn btn-primary submit-comment" type="submit" value="Submit">

@@ -7,7 +7,11 @@
 <h2>Current Tags</h2>
 <ul>
     {% for tag in tags %}
-    <span class="badge bg-secondary">{{tag.tag}}</span>
+    <div class="btn-group" role="group" aria-label="Basic example">
+        <a class="badge btn btn-secondary">{{tag.tag}}</a>
+        <a class="badge btn btn-secondary" href="{% url 'tag_delete' project_id tag.id %}">X</a>
+    </div>
+
     {% endfor %}
 </ul>
 

@@ -2,8 +2,15 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
+
 class User(AbstractUser):
     pass
+
+
+class Setting(models.Model):
+    """Userfeatures settings"""
+    name = models.IntegerField(unique=True, primary_key=True)
+    value = models.IntegerField(default=0)
 
 
 class Project(models.Model):
@@ -12,7 +19,6 @@ class Project(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField()
     banner = models.ImageField(upload_to="project_banners/", blank=True)
-
     created_datetime = models.DateTimeField(auto_now_add=True)
 
 
@@ -30,8 +36,11 @@ class Feature(models.Model):
     title = models.CharField(max_length=50)
     description = models.TextField()
 
-    upvotes = models.IntegerField(default=1)
+    upvotes = models.IntegerField(default=0)
     downvotes = models.IntegerField(default=0)
+
+    anon_upvotes = models.IntegerField(default=1)
+    anon_downvotes = models.IntegerField(default=0)
 
     created_datetime = models.DateTimeField(auto_now_add=True)
     updated_datetime = models.DateTimeField(auto_now_add=True)
@@ -50,11 +59,6 @@ class Votes(models.Model):
     feature = models.ForeignKey(Feature, on_delete=models.CASCADE, default="")
     vote = models.IntegerField(default=False)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['owner', 'feature'], name='unique_votes')
-        ]
-
 
 class Comment(models.Model):
     """A comment on a feature request"""
@@ -69,3 +73,4 @@ class Watchlist(models.Model):
     """A project watchlist of a given user"""
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
+

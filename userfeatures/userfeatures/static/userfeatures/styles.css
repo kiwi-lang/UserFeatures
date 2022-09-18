@@ -7,54 +7,165 @@ body {
     font-family: Arial, Helvetica, sans-serif;
 }
 
-input {
-    padding: 8px;
-    margin: 10px 0;
-    border: 2px solid skyblue;
-    border-radius: 10px;
-    width: 40%;
-}
-
-input[type="submit"] {
-    margin-top: 40px;
-}
-
-label {
+.feature-margin {
     margin-top: 20px;
-    font-size: 20px;
 }
 
-textarea {
+.col-votes {
+    width: 10%;
+}
+
+.col-feature {
+    width: 90%;
+}
+
+.feature-title-div {
+    display: inline-block;
     width: 100%;
-    resize: vertical;
-    padding: 10px;
-    border-radius: 10px;
-    border: 2px solid skyblue;
-    height: 400px;
 }
 
-select {
-    border-radius: 10px;
-    width: 25%;
+.feature-title {
+    display: inline;
+}
+
+.project-feature-title {
+    display: inline-block;
+}
+
+.feature-tag-from {
+    float: right;
+}
+
+.submit-comment {
+    float: right;
+    margin-top: 10px;
+}
+
+.comment-text {
+    border-radius: .375rem;
+    outline: 1px solid #ccc;
+}
+
+.comment-author {
+    float: right;
+    font-weight: bold;
+}
+
+.comment-form {
+    margin-top: 50px;
+}
+
+.comment {
+    margin-top: 10px;
+}
+
+.date {
+    font-size: 10px;
+}
+
+
+.row-margin {
+    margin-top: 10px;
+}
+
+.submit {
+    margin-top: 10px;
+    float: right;
+}
+
+.project {
+    padding: 5px;
+    margin-top: 20px;
+    border-bottom: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+}
+
+
+.vote-outer {
+    padding: 0px
+}
+
+.vote-sml {
+    padding: 0px;
+    margin: 2px;
+}
+
+.projectfeature {
+    margin: 5px;
+    padding: 2px;
+    display: block;
+    width: 100%;
+
+    border-radius: .375rem;
+    outline: 1px solid #ccc;
+}
+
+a.projectfeature-link {
+    color: black
+}
+
+a.projectfeature-link:visited {
+    color: rgb(63, 63, 63)
+}
+
+a.projectfeature-link:active {
+    color: rgb(109, 109, 109)
+}
+
+.projectfeature:hover {
+    outline: 1px solid rgb(143, 143, 143);
+}
+
+.col-cell {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.col-upvotes {
+    width: 5%;
+}
+
+.col-btn {
+    width: 2.5%;
+}
+
+.col-very-big {
+    width: 92.5%;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.block-link {
+    height: 100%;
+    width: 100%;
+    text-decoration: none;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.upvote-count {
+    margin: 0px;
     text-align: center;
-    border: 2px solid skyblue;
-    padding: 8px;
 }
 
-#listing_block {
-    border: 1px solid black;
-    padding: 20px;
-    margin: 10px;
+
+
+.filters {
+    float: right;
 }
 
-#image_box_list {
-    height: fit-content;
-    width: 30%;
-    float: inline-start;
+.pages {
+    text-align: center;
 }
 
-img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
+.center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1300px;
+    max-height: 512px;
+}
+
+#description {
+    margin: 20px;
 }

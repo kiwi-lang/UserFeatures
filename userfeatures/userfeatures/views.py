@@ -1,18 +1,41 @@
 import math
 import datetime
+from enum import Enum, auto
 
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.db.models import Max, F
+from django.contrib.auth.decorators import login_required, permission_required
+from django.db.models import F
 
 
+from .models import User, Project, Feature, ProjectTags, Comment, Votes, Setting
+from .permissions import voter_group
 
-from .models import User, Project, Feature, ProjectTags, Comment, Votes
+
+class Settings(Enum):
+    enable_register = auto()
+    enable_anonymous_voting = auto()
+
+
+def get_setting(setting, default=0):
+    """Retrive the configuration setting
+
+    Examples
+    --------
+
+    >>> get_setting(Settings.enable_anonymous_voting, 0)
+    0
+
+    """
+    try:
+        setting: Setting = Setting.objects.filter(name=setting.value)[0]
+        return setting.value
+    except IndexError:
+        return default
 
 
 def index(request):
@@ -65,6 +88,7 @@ def register(request):
         try:
             user = User.objects.create_user(username, email, password)
             user.save()
+            voter_group.user_set.add(user)
         except IntegrityError:
             return render(
                 request,
@@ -89,7 +113,9 @@ def profile(request):
         ),
     )
 
+
 @login_required
+@permission_required('userfeatures.can_create_projects')
 def project_new(request):
 
     if request.method == "POST":
@@ -110,6 +136,15 @@ def project_new(request):
         request,
         "userfeatures/project_new.html",
     )
+
+@login_required
+def project_delete(request, project_id):
+    project = Project.objects.get(id=project_id)
+
+    if project.owner == request.user:
+        Project.objects.get(id=project_id).delete()
+
+    return redirect(profile)
 
 
 def project_find(request):
@@ -221,7 +256,9 @@ def feature_new(request, project_id):
             project=Project.objects.get(id=project_id),
             owner=request.user,
             upvotes=1,
-            downvotes=0
+            downvotes=0,
+            anon_upvotes=0,
+            anon_downvotes=0,
         )
         feature.save()
 
@@ -236,8 +273,18 @@ def feature_new(request, project_id):
         dict(project_id=project_id, project=project)
     )
 
+
 @login_required
-def feature_tag(request, project_id, feature_id):
+def feature_delete(request, project_id, feature_id):
+    project = Project.objects.get(id=project_id)
+
+    if project.owner == request.user:
+        Feature.objects.get(id=feature_id).delete()
+
+    return redirect(project_show, project_id)
+
+@login_required
+def feature_tag_add(request, project_id, feature_id):
     """Add a tag to a given feature"""
 
     if request.method == "POST":
@@ -254,8 +301,23 @@ def feature_tag(request, project_id, feature_id):
     return redirect(feature_show, project_id, feature_id)
 
 
+
 @login_required
-def feature_show(request, project_id, feature_id):
+def feature_tag_remove(request, project_id, feature_id, tag_id):
+    """Add a tag to a given feature"""
+
+    project = Project.objects.get(id=project_id)
+
+    # Only the project owner can remove tags
+    if project.owner == request.user:
+        feature = Feature.objects.get(id=feature_id)
+        feature.tags.remove(tag_id)
+        feature.save()
+
+    return redirect(feature_show, project_id, feature_id)
+
+
+def feature_comment(request, project_id, feature_id):
     if request.method == "POST":
         comment = Comment.objects.create(
             owner=request.user,
@@ -264,10 +326,16 @@ def feature_show(request, project_id, feature_id):
         )
         comment.save()
 
+    return redirect(feature_show, project_id, feature_id)
+
+
+def feature_show(request, project_id, feature_id):
     project = Project.objects.get(id=project_id)
     feature = Feature.objects.get(id=feature_id)
     comments = Comment.objects.filter(feature_id=feature_id)
     tags = ProjectTags.objects.filter(project=project)
+
+    annon = int(get_setting(Settings.enable_anonymous_voting, 0))
 
     return render(
         request,
@@ -278,7 +346,7 @@ def feature_show(request, project_id, feature_id):
             feature_id=feature_id,
             feature=feature,
             comments=comments,
-            total=feature.upvotes - feature.downvotes,
+            total=feature.upvotes - feature.downvotes + annon * (feature.anon_upvotes - feature.anon_downvotes),
             tags=tags,
         )
     )
@@ -312,6 +380,15 @@ def user_vote(request, project_id, feature_id, vote_value):
     To lessen the computation impact we could just to a update_or_create a vote,
     and have a background task update the counts periodically.
     """
+
+    if not (request.user.is_authenticated and request.user.has_perm("userfeatures.can_vote")):
+        if vote_value > 0:
+            Feature.objects.filter(id=feature_id).update(anon_upvotes=F('anon_upvotes') + 1, updated_datetime=datetime.datetime.now())
+        else:
+            Feature.objects.filter(id=feature_id).update(anon_downvotes=F('anon_downvotes') + 1, updated_datetime=datetime.datetime.now())
+
+        return
+
     old_vote = add_vote(request, project_id, feature_id, vote_value)
 
     # we are voting the same so ignore
@@ -337,19 +414,15 @@ def user_vote(request, project_id, feature_id, vote_value):
             )
 
 
-@login_required
 def feature_downvote_project(request, project_id, feature_id):
     return feature_downvote(request, project_id, feature_id, False)
 
 
-@login_required
 def feature_upvote_project(request, project_id, feature_id):
     return feature_upvote(request, project_id, feature_id, False)
 
 
-@login_required
 def feature_upvote(request, project_id, feature_id, feature=True):
-
     user_vote(request, project_id, feature_id, 1)
 
     if feature:
@@ -357,8 +430,6 @@ def feature_upvote(request, project_id, feature_id, feature=True):
 
     return redirect(project_show, project_id)
 
-
-@login_required
 def feature_downvote(request, project_id, feature_id, feature=True):
     user_vote(request, project_id, feature_id, -1)
 
@@ -386,3 +457,23 @@ def tag_new(request, project_id):
         "userfeatures/tag_new.html",
         dict(project_id=project_id, project=project, tags=tags)
     )
+
+
+@login_required
+def tag_delete(request, project_id, tag_id):
+    project = Project.objects.get(id=project_id)
+    error = None
+
+    if project.owner == request.user:
+        p = ProjectTags.objects.get(id=tag_id, project=project)
+        p.delete()
+    else:
+        error = f'Not project owner'
+
+    tags = ProjectTags.objects.filter(project=project_id)
+    return render(
+        request,
+        "userfeatures/tag_new.html",
+        dict(project_id=project_id, project=project, tags=tags, error=error)
+    )
+

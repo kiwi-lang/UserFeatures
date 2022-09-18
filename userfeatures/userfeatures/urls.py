@@ -11,6 +11,7 @@ urlpatterns = [
 
     path("projects", views.project_find, name="project_find"),
     path("project/new", views.project_new, name="project_new"),
+    path("project/<int:project_id>/delete", views.project_delete, name="project_delete"),
     path("project/<int:project_id>", views.project_show, name="project_show"),
     path("project/<int:project_id>/page/<int:page>", views.project_show, name="project_show"),
 
@@ -20,10 +21,15 @@ urlpatterns = [
     path("project/<int:project_id>/tag/<int:tag_id>/page/<int:page>", views.project_show_tags, name="project_show_tag"),
 
     path("project/<int:project_id>/tag/new", views.tag_new, name="tag_new"),
+    path("project/<int:project_id>/tag/<int:tag_id>/delete", views.tag_delete, name="tag_delete"),
+
     path("project/<int:project_id>/feature/find", views.feature_find, name="feature_find"),
     path("project/<int:project_id>/feature/new", views.feature_new, name="feature_new"),
+    path("project/<int:project_id>/feature/<int:feature_id>/delete", views.feature_delete, name="feature_delete"),
     path("project/<int:project_id>/feature/<int:feature_id>", views.feature_show, name="feature_show"),
-    path("project/<int:project_id>/feature/<int:feature_id>/tag", views.feature_tag, name="feature_tag"),
+    path("project/<int:project_id>/feature/<int:feature_id>/comment", views.feature_comment, name="feature_comment"),
+    path("project/<int:project_id>/feature/<int:feature_id>/tag/add", views.feature_tag_add, name="feature_tag_add"),
+    path("project/<int:project_id>/feature/<int:feature_id>/tag/remove/<int:tag_id>", views.feature_tag_remove, name="feature_tag_remove"),
 
     path("project/<int:project_id>/feature/<int:feature_id>/up", views.feature_upvote, name="feature_upvote"),
     path("project/<int:project_id>/feature/<int:feature_id>/down", views.feature_downvote, name="feature_downvote"),
