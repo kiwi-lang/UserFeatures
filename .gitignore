@@ -76,3 +76,5 @@ target/
 _build/
 
 db.sqlite3
+staticfiles/
+
