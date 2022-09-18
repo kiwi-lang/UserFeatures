@@ -6,6 +6,12 @@ class User(AbstractUser):
     pass
 
 
+class Setting(models.Model):
+    """Userfeatures settings"""
+    name = models.IntegerField(unique=True, primary_key=True)
+    value = models.IntegerField(default=0)
+
+
 class Project(models.Model):
     """A project for which user can submit new feature request"""
     owner = models.ForeignKey(User, on_delete=models.CASCADE, default="")

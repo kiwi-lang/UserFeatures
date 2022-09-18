@@ -1,5 +1,6 @@
 import math
 import datetime
+from enum import Enum
 
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
@@ -11,8 +12,31 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Max, F
 
 
+from .models import User, Project, Feature, ProjectTags, Comment, Votes, Setting
 
-from .models import User, Project, Feature, ProjectTags, Comment, Votes
+
+
+class Settings(Enum):
+    enable_register = 0
+    enable_anonymous_voting = 1
+
+
+
+def get_setting(setting, default=0):
+    """Retrive the configuration setting
+
+    Examples
+    --------
+
+    >>> get_setting(Settings.enable_anonymous_voting, 0)
+    0
+
+    """
+    try:
+        setting: Setting = Setting.objects.filter(name=setting)[0]
+        return setting.value
+    except IndexError:
+        return default
 
 
 def index(request):
