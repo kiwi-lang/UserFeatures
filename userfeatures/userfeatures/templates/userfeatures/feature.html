@@ -62,8 +62,11 @@
 
                 <div class="btn-group" role="group" aria-label="Basic example">
                     <a class="badge btn btn-secondary">{{tag.tag}}</a>
+
+                    {% if user.is_authenticated and user == project.owner %}
                     <a class="badge btn btn-secondary"
                         href="{% url 'feature_tag_remove' project_id feature_id tag.id %}">X</a>
+                    {% endif %}
                 </div>
 
                 {% endfor %}

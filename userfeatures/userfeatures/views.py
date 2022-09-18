@@ -383,9 +383,9 @@ def user_vote(request, project_id, feature_id, vote_value):
 
     if not (request.user.is_authenticated and request.user.has_perm("userfeatures.can_vote")):
         if vote_value > 0:
-            Feature.objects.filter(id=feature_id).update(upvotes=F('anon_upvotes') + 1, updated_datetime=datetime.datetime.now())
+            Feature.objects.filter(id=feature_id).update(anon_upvotes=F('anon_upvotes') + 1, updated_datetime=datetime.datetime.now())
         else:
-            Feature.objects.filter(id=feature_id).update(downvotes=F('anon_downvotes') + 1, updated_datetime=datetime.datetime.now())
+            Feature.objects.filter(id=feature_id).update(anon_downvotes=F('anon_downvotes') + 1, updated_datetime=datetime.datetime.now())
 
         return
 
