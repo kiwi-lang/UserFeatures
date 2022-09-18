@@ -110,7 +110,7 @@
 <div class="container">
 
     <div>
-        <h1 class="feature-title">Suggestions</h1>
+        <h1 class="feature-title">Suggestions ({{feature_count}})</h1>
 
         <div class="filters">
             <div class="btn-group" role="group" aria-label="Basic example">
@@ -119,8 +119,9 @@
                 <a class="btn btn-secondary" href="{% url 'project_show_latest' project_id 0 %}">Latest</a>
             </div>
 
-
+            <!--
             <a class="btn btn-secondary" href="">All ({{feature_count}})</a>
+            -->
 
             <div class="btn-group">
                 <div class="dropdown">
