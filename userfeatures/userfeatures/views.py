@@ -12,39 +12,13 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import F
 
 
-from .models import User, Project, Feature, ProjectTags, Comment, Votes, Setting, UserSetting, voter_group
-
+from .models import User, Project, Feature, ProjectTags, Comment, Votes, Setting
+from .permissions import voter_group
 
 
 class Settings(Enum):
     enable_register = auto()
     enable_anonymous_voting = auto()
-
-
-# this should probably be permissions
-class UserSettings(Enum):
-    can_create_projects = auto()
-    can_comment = auto()
-    can_vote = auto()
-    can_poll = auto()
-    can_add_tag = auto()
-
-
-def get_user_setting(user, setting, default=0):
-    """Retrive a user setting
-
-    Examples
-    --------
-
-    >>> get_setting(UserSettings.can_create_projects, 0)
-    0
-
-    """
-    try:
-        setting: UserSetting = UserSetting.objects.filter(owner=user, setting=setting)[0]
-        return setting.value
-    except IndexError:
-        return default
 
 
 def get_setting(setting, default=0):
@@ -58,7 +32,7 @@ def get_setting(setting, default=0):
 
     """
     try:
-        setting: Setting = Setting.objects.filter(name=setting)[0]
+        setting: Setting = Setting.objects.filter(name=setting.value)[0]
         return setting.value
     except IndexError:
         return default
@@ -162,6 +136,13 @@ def project_new(request):
         request,
         "userfeatures/project_new.html",
     )
+
+@login_required
+def project_delete(request, project_id):
+    project = Project.objects.get(id=project_id)
+
+    if project.owner == request.user:
+        Project.objects.get(id=project_id).delete()
 
 
 def project_find(request):
@@ -274,7 +255,7 @@ def feature_new(request, project_id):
             owner=request.user,
             upvotes=1,
             downvotes=0,
-            anon_upvote=0,
+            anon_upvotes=0,
             anon_downvotes=0,
         )
         feature.save()
@@ -290,8 +271,17 @@ def feature_new(request, project_id):
         dict(project_id=project_id, project=project)
     )
 
+
 @login_required
-def feature_tag(request, project_id, feature_id):
+def feature_delete(request, project_id, feature_id):
+    project = Project.objects.get(id=project_id)
+
+    if project.owner == request.user:
+        Feature.objects.get(id=feature_id).delete()
+
+
+@login_required
+def feature_tag_add(request, project_id, feature_id):
     """Add a tag to a given feature"""
 
     if request.method == "POST":
@@ -303,6 +293,23 @@ def feature_tag(request, project_id, feature_id):
             feature = Feature.objects.get(id=feature_id)
             for tag_id in tag_ids:
                 feature.tags.add(tag_id)
+            feature.save()
+
+    return redirect(feature_show, project_id, feature_id)
+
+
+
+@login_required
+def feature_tag_remove(request, project_id, feature_id, tag_id):
+    """Add a tag to a given feature"""
+
+    if request.method == "POST":
+        project = Project.objects.get(id=project_id)
+
+        # Only the project owner can remove tags
+        if project.owner == request.user:
+            feature = Feature.objects.get(id=feature_id)
+            feature.tags.remove(tag_id)
             feature.save()
 
     return redirect(feature_show, project_id, feature_id)
@@ -372,7 +379,7 @@ def user_vote(request, project_id, feature_id, vote_value):
     and have a background task update the counts periodically.
     """
 
-    if not request.user.is_authenticated or not request.user.has_permission("userfeatures.can_vote"):
+    if not (request.user.is_authenticated and request.user.has_perm("userfeatures.can_vote")):
         if vote_value > 0:
             Feature.objects.filter(id=feature_id).update(upvotes=F('anon_upvotes') + 1, updated_datetime=datetime.datetime.now())
         else:
@@ -448,3 +455,20 @@ def tag_new(request, project_id):
         "userfeatures/tag_new.html",
         dict(project_id=project_id, project=project, tags=tags)
     )
+
+
+@login_required
+def tag_delete(request, project_id, tag_id):
+    project = Project.objects.get(id=project_id)
+    tags = ProjectTags.objects.filter(project=project_id)
+
+    if request.method == "POST":
+        if project.owner == request.user:
+            ProjectTags.objects.get(id=tag_id).delete()
+
+    return render(
+        request,
+        "userfeatures/tag_new.html",
+        dict(project_id=project_id, project=project, tags=tags)
+    )
+

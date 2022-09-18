@@ -1,6 +1,4 @@
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.models import Permission, Group
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 
@@ -21,7 +19,6 @@ class Project(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField()
     banner = models.ImageField(upload_to="project_banners/", blank=True)
-
     created_datetime = models.DateTimeField(auto_now_add=True)
 
 
@@ -62,11 +59,6 @@ class Votes(models.Model):
     feature = models.ForeignKey(Feature, on_delete=models.CASCADE, default="")
     vote = models.IntegerField(default=False)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['owner', 'feature'], name='unique_votes')
-        ]
-
 
 class Comment(models.Model):
     """A comment on a feature request"""
@@ -82,65 +74,3 @@ class Watchlist(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
 
-
-
-
-project_type = ContentType.objects.get_for_model(Project)
-can_create_project = Permission.objects.create(
-    codename='can_create_projects',
-    name='Can create new projects',
-    content_type=project_type,
-)
-
-
-comment_type = ContentType.objects.get_for_model(Comment)
-can_comment = Permission.objects.create(
-    codename='can_comment',
-    name='Can write comments',
-    content_type=comment_type,
-)
-
-
-feature_type = ContentType.objects.get_for_model(Feature)
-can_create_features = Permission.objects.create(
-    codename='can_create_features',
-    name='Can create features',
-    content_type=feature_type,
-)
-
-
-vote_type = ContentType.objects.get_for_model(Votes)
-can_vote = Permission.objects.create(
-    codename='can_vote',
-    name='Can vote on features',
-    content_type=vote_type,
-)
-
-tag_type = ContentType.objects.get_for_model(ProjectTags)
-can_create_tag = Permission.objects.create(
-    codename='can_create_tags',
-    name='Can create new tags',
-    content_type=tag_type,
-)
-
-
-voter_group, created = Group.objects.get_or_create(name='voter')
-
-if created:
-    voter_group.permissions.add(
-        'userfeatures.can_vote',
-        'userfeatures.can_comment',
-        'userfeatures.can_create_features',
-    )
-
-
-project_onwer, created = Group.objects.get_or_create(name='project_onwer')
-
-if created:
-    project_onwer.permissions.add(
-        'userfeatures.can_vote',
-        'userfeatures.can_comment',
-        'userfeatures.can_create_features',
-        'userfeatures.can_create_tags',
-        'userfeatures.can_create_projects',
-    )

@@ -8,68 +8,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-
-
 <div class="container">
-    <style>
-        .vote-outer {
-            padding: 5px
-        }
 
-        .feature {
-            margin-top: 20px;
-        }
-
-        .col-votes {
-            width: 10%;
-        }
-
-        .col-feature {
-            width: 90%;
-        }
-
-        .feature-title-div {
-            display: inline-block;
-            width: 100%;
-        }
-
-        .feature-title {
-            display: inline;
-        }
-
-        .feature-tag-from {
-            float: right;
-        }
-
-        .submit-comment {
-            float: right;
-            margin-top: 10px;
-        }
-
-        .comment-text {
-            border-radius: .375rem;
-            outline: 1px solid #ccc;
-        }
-
-        .comment-author {
-            float: right;
-            font-weight: bold;
-        }
-
-        .comment-form {
-            margin-top: 50px;
-        }
-
-        .comment {
-            margin-top: 10px;
-        }
-
-        .date {
-            font-size: 10px;
-        }
-    </style>
-
-    <div class="row feature">
+    <div class="row feature-margin">
         <div class="col col-2 col-votes">
             <div class="row vote-outer">
                 <a class="btn btn-success vote" href="{% url 'feature_upvote' project_id feature_id %}">
@@ -99,7 +40,7 @@
                 <h3 class="feature-title">{{feature.title}}</h3>
                 {% if user.is_authenticated and user == project.owner %}
                 <div class="feature-tag-from">
-                    <form class="row g-3" method="post" action="{% url 'feature_tag' project_id feature_id %}">
+                    <form class="row g-3" method="post" action="{% url 'feature_tag_add' project_id feature_id %}">
                         {% csrf_token %}
                         <div class="col-auto">
                             <select name="tag" class="form-select" aria-label="Add Tag">

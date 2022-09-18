@@ -5,16 +5,6 @@
 {% block body %}
 <h1>New Suggestion</h1>
 
-<style>
-    .row {
-        margin-top: 10px;
-    }
-
-    .submit {
-        margin-top: 10px;
-        float: right;
-    }
-</style>
 
 <form id="feature_new" action="{% url 'feature_new' project_id %}" method="post">
     {% csrf_token %}
