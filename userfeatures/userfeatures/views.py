@@ -1,25 +1,49 @@
 import math
 import datetime
-from enum import Enum
+from enum import Enum, auto
 
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-from django.db.models import Max, F
+from django.db.models import F
 
 
-from .models import User, Project, Feature, ProjectTags, Comment, Votes, Setting
+from .models import User, Project, Feature, ProjectTags, Comment, Votes, Setting, UserSetting
 
 
 
 class Settings(Enum):
-    enable_register = 0
-    enable_anonymous_voting = 1
+    enable_register = auto()
+    enable_anonymous_voting = auto()
 
+
+class UserSettings(Enum):
+    can_create_projects = auto()
+    can_comment = auto()
+    can_vote = auto()
+    can_poll = auto()
+    can_add_tag = auto()
+
+
+def get_user_setting(user, setting, default=0):
+    """Retrive a user setting
+
+    Examples
+    --------
+
+    >>> get_setting(UserSettings.can_create_projects, 0)
+    0
+
+    """
+    try:
+        setting: UserSetting = UserSetting.objects.filter(owner=user, setting=setting)[0]
+        return setting.value
+    except IndexError:
+        return default
 
 
 def get_setting(setting, default=0):
@@ -245,7 +269,9 @@ def feature_new(request, project_id):
             project=Project.objects.get(id=project_id),
             owner=request.user,
             upvotes=1,
-            downvotes=0
+            downvotes=0,
+            anon_upvote=0,
+            anon_downvotes=0,
         )
         feature.save()
 
@@ -293,6 +319,8 @@ def feature_show(request, project_id, feature_id):
     comments = Comment.objects.filter(feature_id=feature_id)
     tags = ProjectTags.objects.filter(project=project)
 
+    annon = int(get_setting(Settings.enable_anonymous_voting, 0))
+
     return render(
         request,
         "userfeatures/feature.html",
@@ -302,7 +330,7 @@ def feature_show(request, project_id, feature_id):
             feature_id=feature_id,
             feature=feature,
             comments=comments,
-            total=feature.upvotes - feature.downvotes,
+            total=feature.upvotes - feature.downvotes + annon * (feature.anon_upvotes - feature.anon_downvotes),
             tags=tags,
         )
     )
@@ -336,6 +364,14 @@ def user_vote(request, project_id, feature_id, vote_value):
     To lessen the computation impact we could just to a update_or_create a vote,
     and have a background task update the counts periodically.
     """
+    if not request.user.is_authenticated:
+        if vote_value > 0:
+            Feature.objects.filter(id=feature_id).update(upvotes=F('anon_upvotes') + 1, updated_datetime=datetime.datetime.now())
+        else:
+            Feature.objects.filter(id=feature_id).update(downvotes=F('anon_downvotes') + 1, updated_datetime=datetime.datetime.now())
+
+        return
+
     old_vote = add_vote(request, project_id, feature_id, vote_value)
 
     # we are voting the same so ignore
@@ -361,19 +397,15 @@ def user_vote(request, project_id, feature_id, vote_value):
             )
 
 
-@login_required
 def feature_downvote_project(request, project_id, feature_id):
     return feature_downvote(request, project_id, feature_id, False)
 
 
-@login_required
 def feature_upvote_project(request, project_id, feature_id):
     return feature_upvote(request, project_id, feature_id, False)
 
 
-@login_required
 def feature_upvote(request, project_id, feature_id, feature=True):
-
     user_vote(request, project_id, feature_id, 1)
 
     if feature:
@@ -381,8 +413,6 @@ def feature_upvote(request, project_id, feature_id, feature=True):
 
     return redirect(project_show, project_id)
 
-
-@login_required
 def feature_downvote(request, project_id, feature_id, feature=True):
     user_vote(request, project_id, feature_id, -1)
 

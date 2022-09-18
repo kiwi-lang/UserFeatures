@@ -12,6 +12,13 @@ class Setting(models.Model):
     value = models.IntegerField(default=0)
 
 
+class UserSetting(models.Model):
+    """App features enabled for a user"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default="")
+    setting = models.IntegerField(unique=True, primary_key=True)
+    value = models.IntegerField(default=0)
+
+
 class Project(models.Model):
     """A project for which user can submit new feature request"""
     owner = models.ForeignKey(User, on_delete=models.CASCADE, default="")
@@ -36,8 +43,11 @@ class Feature(models.Model):
     title = models.CharField(max_length=50)
     description = models.TextField()
 
-    upvotes = models.IntegerField(default=1)
+    upvotes = models.IntegerField(default=0)
     downvotes = models.IntegerField(default=0)
+
+    anon_upvotes = models.IntegerField(default=1)
+    anon_downvotes = models.IntegerField(default=0)
 
     created_datetime = models.DateTimeField(auto_now_add=True)
     updated_datetime = models.DateTimeField(auto_now_add=True)
