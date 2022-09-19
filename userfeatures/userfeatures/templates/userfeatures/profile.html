@@ -12,7 +12,7 @@
             <h1>#{{project.id}} <a href="{% url 'project_show' project.id %}"> {{project.name}}</a></h1>
         </div>
         <div class="row">
-            <div class="col col-2"><img width="100%" src="{{project.banner}}"></img></div>
+            <div class="col col-2"><img width="100%" src="{{project.banner.url}}"></img></div>
             <div class="col col-10">
                 <p>{{project.description}}</p>
             </div>

@@ -6,25 +6,16 @@
 <div class="container">
     <h1>New project</h1>
 
-    <form id="project_new" action="{% url 'project_new' %}" method="post">
+    <form id="project_new" action="{% url 'project_new' %}" method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <div>
-            <label for="name">Title:</label><br />
-            <input class="form-control" type="text" name="name" required>
+        <div class="row">
+            <div class="col">
+                {{ form.as_div }}
+            </div>
         </div>
-
-        <div>
-            <label for="description">Description:</label><br />
-            <textarea class="form-control" name="description" placeholder="Your description here..."
-                required></textarea><br />
+        <div class="row project-sub">
+            <div class="col"><input class="btn btn-primary" type="submit" value="Submit"></div>
         </div>
-
-        <div>
-            <label for="image">Upload image URL:</label><br />
-            <input class="form-control" type="url" name="image">
-        </div>
-
-        <div><input type="submit" value="Submit"></div>
 
     </form>
 </div>

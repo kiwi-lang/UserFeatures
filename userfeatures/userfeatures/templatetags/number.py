@@ -6,9 +6,9 @@ register = template.Library()
 import math
 
 multiplier = [
-    (0, ''),
-    (3, 'k'),
-    (6, 'm'),
+    (0, ""),
+    (3, "k"),
+    (6, "m"),
 ]
 
 
@@ -17,15 +17,14 @@ def short_number(a, b):
     number = a - int(b)
 
     s = number
-    n = ''
+    n = ""
 
     if number > 1000000:
-        s =  number // 1000000
-        n = 'm'
+        s = number // 1000000
+        n = "m"
 
     if number > 1000:
         s = number // 1000
-        n = 'k'
+        n = "k"
 
     return f"{s}{n}"
-
