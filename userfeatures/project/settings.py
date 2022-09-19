@@ -26,7 +26,7 @@ IS_HEROKU = "DYNO" in os.environ
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "123"
 
-if 'SECRET_KEY' in os.environ:
+if "SECRET_KEY" in os.environ:
     SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -99,7 +99,8 @@ MAX_CONN_AGE = 600
 if "DATABASE_URL" in os.environ:
     # Configure Django for DATABASE_URL environment variable.
     DATABASES["default"] = dj_database_url.config(
-        conn_max_age=MAX_CONN_AGE, ssl_require=True)
+        conn_max_age=MAX_CONN_AGE, ssl_require=True
+    )
 
     # Enable test database if found in CI environment.
     if "CI" in os.environ:
@@ -151,4 +152,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-CSRF_TRUSTED_ORIGINS = ["https://userfeatures.herokuapp.com",]
+CSRF_TRUSTED_ORIGINS = [
+    "https://userfeatures.herokuapp.com",
+]
+
+
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_URL = "/media/"

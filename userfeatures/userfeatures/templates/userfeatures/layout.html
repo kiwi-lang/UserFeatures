@@ -35,16 +35,36 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'profile' %}">Profile</a>
                         </li>
+
                         <li class="nav-item">
+                            {% if project_id is not None %}
                             <a class="nav-link" href="{% url 'logout' project_id %}">Log Out</a>
+                            {% else %}
+                            <a class="nav-link" href="{% url 'logout' %}">Log Out</a>
+                            {% endif %}
                         </li>
                         {% else %}
+
+                        {% if project_id is not None %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'login' project_id %}">Log In</a>
+
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'register' project_id %}">Register</a>
                         </li>
+                        {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">Log In</a>
+
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'register' %}">Register</a>
+                        </li>
+                        {% endif %}
+
+                        <a class="nav-link" href="{% url 'logout' %}">Log Out</a>
+
                         {% endif %}
                     </ul>
 

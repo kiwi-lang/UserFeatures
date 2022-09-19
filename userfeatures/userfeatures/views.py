@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import F
+from django import forms
 
 
 from .models import User, Project, Feature, ProjectTags, Comment, Votes, Setting
@@ -17,6 +18,7 @@ from .permissions import voter_group
 
 # use the meta project as `no project`
 NO_PROJECT = 0
+
 
 class Settings(Enum):
     enable_register = auto()
@@ -93,7 +95,9 @@ def register(request, project_id=NO_PROJECT):
         confirmation = request.POST["confirmation"]
         if password != confirmation:
             return render(
-                request, "userfeatures/register.html", {"message": "Passwords must match."}
+                request,
+                "userfeatures/register.html",
+                {"message": "Passwords must match."},
             )
 
         # Attempt to create new user
@@ -114,7 +118,9 @@ def register(request, project_id=NO_PROJECT):
 
         return HttpResponseRedirect(reverse("index"))
     else:
-        return render(request, "userfeatures/login_register.html", dict(project_id=project_id))
+        return render(
+            request, "userfeatures/login_register.html", dict(project_id=project_id)
+        )
 
 
 @login_required
@@ -130,28 +136,39 @@ def profile(request):
     )
 
 
+class ProjectForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(ProjectForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            visible.field.widget.attrs["class"] = "form-control"
+
+    class Meta:
+        model = Project
+        fields = ["name", "description", "banner"]
+
+
 @login_required
-@permission_required('userfeatures.can_create_projects')
+@permission_required("userfeatures.can_create_projects")
 def project_new(request):
 
     if request.method == "POST":
-        # Create a new project
-        project = Project.objects.create(
-            name=request.POST["name"],
-            description=request.POST["description"],
-            owner=request.user,
-            banner=request.POST["image"],
-        )
-        project.save()
 
-        # redirect to the project page
-        return redirect(project_show, project.id)
+        form = ProjectForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            project = form.save(commit=False)
+            project.owner = request.user
+            project.save()
+            form.save_m2m()
+
+            # redirect to the project page
+            return redirect(project_show, project.id)
+    else:
+        form = ProjectForm()
 
     # show the form
-    return render(
-        request,
-        "userfeatures/project_new.html",
-    )
+    return render(request, "userfeatures/project_new.html", dict(form=form))
+
 
 @login_required
 def project_delete(request, project_id):
@@ -182,6 +199,7 @@ def project_show_latest(request, project_id, page=0):
 def project_show_tags(request, project_id, tag_id, page=0):
     return project_show(request, project_id, page, mode="top", tags=(tag_id,))
 
+
 def project_show(request, project_id, page=0, mode="top", tags=None, all=False):
     step = 50
 
@@ -194,14 +212,20 @@ def project_show(request, project_id, page=0, mode="top", tags=None, all=False):
         # this does not work, it creates duplicate features
         # features = Feature.objects.filter(project=project_id).order_by("-votes")
 
-        features = Feature.objects.filter(project=project_id).order_by((F('upvotes') - F('downvotes')).desc())
-        features.query.group_by = ['id']
+        features = Feature.objects.filter(project=project_id).order_by(
+            (F("upvotes") - F("downvotes")).desc()
+        )
+        features.query.group_by = ["id"]
 
-    elif mode == 'latest':
-        features = Feature.objects.filter(project=project_id).order_by("-created_datetime")
+    elif mode == "latest":
+        features = Feature.objects.filter(project=project_id).order_by(
+            "-created_datetime"
+        )
 
-    elif mode == 'rising':
-        features = Feature.objects.filter(project=project_id).order_by("-updated_datetime")
+    elif mode == "rising":
+        features = Feature.objects.filter(project=project_id).order_by(
+            "-updated_datetime"
+        )
 
     else:
         features = Feature.objects.filter(project=project_id)
@@ -211,7 +235,7 @@ def project_show(request, project_id, page=0, mode="top", tags=None, all=False):
     page_count = math.ceil(feature_count / step)
 
     if not all:
-        features = features[step * page:step * (page + 1)]
+        features = features[step * page : step * (page + 1)]
 
     return render(
         request,
@@ -223,7 +247,7 @@ def project_show(request, project_id, page=0, mode="top", tags=None, all=False):
             tags=tags,
             feature_count=feature_count,
             pages=range(page_count) if page_count > 1 else [],
-        )
+        ),
     )
 
 
@@ -254,11 +278,12 @@ def feature_find(request, project_id):
                 features=options,
                 tags=tags,
                 pages=[],
-            )
+            ),
         )
 
-
-    return JsonResponse([dict(title=o.title, id=o.id) for o in options[:10]], safe=False)
+    return JsonResponse(
+        [dict(title=o.title, id=o.id) for o in options[:10]], safe=False
+    )
 
 
 @login_required
@@ -286,7 +311,7 @@ def feature_new(request, project_id):
     return render(
         request,
         "userfeatures/feature_new.html",
-        dict(project_id=project_id, project=project)
+        dict(project_id=project_id, project=project),
     )
 
 
@@ -298,6 +323,7 @@ def feature_delete(request, project_id, feature_id):
         Feature.objects.get(id=feature_id).delete()
 
     return redirect(project_show, project_id)
+
 
 @login_required
 def feature_tag_add(request, project_id, feature_id):
@@ -315,7 +341,6 @@ def feature_tag_add(request, project_id, feature_id):
             feature.save()
 
     return redirect(feature_show, project_id, feature_id)
-
 
 
 @login_required
@@ -362,9 +387,11 @@ def feature_show(request, project_id, feature_id):
             feature_id=feature_id,
             feature=feature,
             comments=comments,
-            total=feature.upvotes - feature.downvotes + annon * (feature.anon_upvotes - feature.anon_downvotes),
+            total=feature.upvotes
+            - feature.downvotes
+            + annon * (feature.anon_upvotes - feature.anon_downvotes),
             tags=tags,
-        )
+        ),
     )
 
 
@@ -397,11 +424,19 @@ def user_vote(request, project_id, feature_id, vote_value):
     and have a background task update the counts periodically.
     """
 
-    if not (request.user.is_authenticated and request.user.has_perm("userfeatures.can_vote")):
+    if not (
+        request.user.is_authenticated and request.user.has_perm("userfeatures.can_vote")
+    ):
         if vote_value > 0:
-            Feature.objects.filter(id=feature_id).update(anon_upvotes=F('anon_upvotes') + 1, updated_datetime=datetime.datetime.now())
+            Feature.objects.filter(id=feature_id).update(
+                anon_upvotes=F("anon_upvotes") + 1,
+                updated_datetime=datetime.datetime.now(),
+            )
         else:
-            Feature.objects.filter(id=feature_id).update(anon_downvotes=F('anon_downvotes') + 1, updated_datetime=datetime.datetime.now())
+            Feature.objects.filter(id=feature_id).update(
+                anon_downvotes=F("anon_downvotes") + 1,
+                updated_datetime=datetime.datetime.now(),
+            )
 
         return
 
@@ -414,19 +449,27 @@ def user_vote(request, project_id, feature_id, vote_value):
     # this is a new vote
     if old_vote == 0:
         if vote_value > 0:
-            Feature.objects.filter(id=feature_id).update(upvotes=F('upvotes') + 1, updated_datetime=datetime.datetime.now())
+            Feature.objects.filter(id=feature_id).update(
+                upvotes=F("upvotes") + 1, updated_datetime=datetime.datetime.now()
+            )
         else:
-            Feature.objects.filter(id=feature_id).update(downvotes=F('downvotes') + 1, updated_datetime=datetime.datetime.now())
+            Feature.objects.filter(id=feature_id).update(
+                downvotes=F("downvotes") + 1, updated_datetime=datetime.datetime.now()
+            )
 
     else:
         # We changed our vote
         if vote_value > 0:
             Feature.objects.filter(id=feature_id).update(
-                upvotes=F('upvotes') + 1, downvotes=F('downvotes') - 1, updated_datetime=datetime.datetime.now()
+                upvotes=F("upvotes") + 1,
+                downvotes=F("downvotes") - 1,
+                updated_datetime=datetime.datetime.now(),
             )
         else:
             Feature.objects.filter(id=feature_id).update(
-                upvotes=F('upvotes') - 1, downvotes=F('downvotes') + 1, updated_datetime=datetime.datetime.now()
+                upvotes=F("upvotes") - 1,
+                downvotes=F("downvotes") + 1,
+                updated_datetime=datetime.datetime.now(),
             )
 
 
@@ -445,6 +488,7 @@ def feature_upvote(request, project_id, feature_id, feature=True):
         return redirect(feature_show, project_id, feature_id)
 
     return redirect(project_show, project_id)
+
 
 def feature_downvote(request, project_id, feature_id, feature=True):
     user_vote(request, project_id, feature_id, -1)
@@ -471,7 +515,7 @@ def tag_new(request, project_id):
     return render(
         request,
         "userfeatures/tag_new.html",
-        dict(project_id=project_id, project=project, tags=tags)
+        dict(project_id=project_id, project=project, tags=tags),
     )
 
 
@@ -484,12 +528,11 @@ def tag_delete(request, project_id, tag_id):
         p = ProjectTags.objects.get(id=tag_id, project=project)
         p.delete()
     else:
-        error = f'Not project owner'
+        error = f"Not project owner"
 
     tags = ProjectTags.objects.filter(project=project_id)
     return render(
         request,
         "userfeatures/tag_new.html",
-        dict(project_id=project_id, project=project, tags=tags, error=error)
+        dict(project_id=project_id, project=project, tags=tags, error=error),
     )
-
