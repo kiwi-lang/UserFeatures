@@ -2,8 +2,20 @@ from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 
 
-from .models import Project, Feature, ProjectTags, Comment, Votes
+from .models import Project, Feature, ProjectTags, Comment, Votes, User
 
+meta_user, _ = User.objects.get_or_create(
+    id=0
+)
+meta_user.set_unusable_password()
+
+
+meta_project, _ = Project.objects.get_or_create(
+    id=0,
+    owner=meta_user,
+    name="Userfeatures",
+    description="Userfeature is a website for community driven development",
+)
 
 project_type = ContentType.objects.get_for_model(Project)
 can_create_project, _ = Permission.objects.get_or_create(

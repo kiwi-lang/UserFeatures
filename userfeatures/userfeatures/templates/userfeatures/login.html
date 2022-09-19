@@ -12,7 +12,7 @@
         <div class="alert alert-danger" role="alert">{{ message }}</div>
         {% endif %}
 
-        <form action="{% url 'login' %}" method="post">
+        <form action="{% url 'login' project_id %}" method="post">
             {% csrf_token %}
             <div class="mb-3">
                 <label for="username_input" class="form-label">Username</label>
@@ -26,7 +26,7 @@
             <input class="btn btn-primary" type="submit" value="Login">
         </form>
 
-        Don't have an account? <a href="{% url 'register' %}">Register here.</a>
+        Don't have an account? <a href="{% url 'register' project_id %}">Register here.</a>
     </div>
     <div class="col"></div>
 </div>

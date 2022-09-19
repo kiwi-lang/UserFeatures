@@ -15,6 +15,8 @@ from django.db.models import F
 from .models import User, Project, Feature, ProjectTags, Comment, Votes, Setting
 from .permissions import voter_group
 
+# use the meta project as `no project`
+NO_PROJECT = 0
 
 class Settings(Enum):
     enable_register = auto()
@@ -40,11 +42,13 @@ def get_setting(setting, default=0):
 
 def index(request):
     return render(
-        request, "userfeatures/index.html", {"listings": []}
+        request,
+        "userfeatures/index.html",
+        dict(listings=[], project_id=NO_PROJECT),
     )
 
 
-def login_view(request, project_id=None):
+def login_view(request, project_id=NO_PROJECT):
     if request.method == "POST":
 
         # Attempt to sign user in
@@ -56,26 +60,30 @@ def login_view(request, project_id=None):
         if user is not None:
             login(request, user)
 
-            if project_id is not None:
-                return render(project_show, project_id)
+            if project_id != NO_PROJECT:
+                return redirect(project_show, project_id)
 
             return HttpResponseRedirect(reverse("index"))
         else:
             return render(
                 request,
                 "userfeatures/login.html",
-                {"message": "Invalid username and/or password."},
+                dict(message="Invalid username and/or password."),
             )
     else:
-        return render(request, "userfeatures/login.html")
+        return render(request, "userfeatures/login.html", dict(project_id=project_id))
 
 
-def logout_view(request):
+def logout_view(request, project_id=NO_PROJECT):
     logout(request)
+
+    if project_id != NO_PROJECT:
+        return redirect(project_show, project_id)
+
     return HttpResponseRedirect(reverse("index"))
 
 
-def register(request, project_id=None):
+def register(request, project_id=NO_PROJECT):
     if request.method == "POST":
         username = request.POST["username"]
         email = request.POST["email"]
@@ -101,12 +109,12 @@ def register(request, project_id=None):
             )
         login(request, user)
 
-        if project_id is not None:
-            return render(project_show, project_id)
+        if project_id != NO_PROJECT:
+            return redirect(project_show, project_id)
 
         return HttpResponseRedirect(reverse("index"))
     else:
-        return render(request, "userfeatures/login_register.html")
+        return render(request, "userfeatures/login_register.html", dict(project_id=project_id))
 
 
 @login_required
